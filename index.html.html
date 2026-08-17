@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI and Robotics - Information Retrieval System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f5f5f5;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 22px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 22px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .examples {
+            margin: 10px 0 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .example-btn {
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 7px 10px;
+            margin: 4px 4px 0 0;
+            font-weight: normal;
+        }
+
+        .example-btn:hover {
+            background: #dfe6e9;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+
+        .result h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+
+        .score {
+            font-weight: bold;
+        }
+
+        .documents {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .document-card {
+            margin: 12px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+
+        .empty {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 650px) {
+            body { margin: 12px; }
+            .container { padding: 18px; }
+            .search-box { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TF-IDF Information Retrieval System</h1>
+        <div class="subtitle">Selected Topic: <b>AI and Robotics</b></div>
+
+        <div class="search-box">
+            <input type="text" id="query" placeholder="Enter a query about AI and Robotics" onkeydown="if(event.key==='Enter') search()">
+            <button onclick="search()">SEARCH</button>
+        </div>
+
+        <div class="examples">
+            <b>Example queries:</b><br>
+            <button class="example-btn" onclick="setQuery('AI and robotics')">AI and robotics</button>
+            <button class="example-btn" onclick="setQuery('robots recognize objects')">robots recognize objects</button>
+            <button class="example-btn" onclick="setQuery('healthcare manufacturing agriculture')">healthcare manufacturing agriculture</button>
+            <button class="example-btn" onclick="setQuery('machines perform tasks')">machines perform tasks</button>
+        </div>
+
+        <div id="output"></div>
+
+        <div class="documents">
+            <h2>Document Collection</h2>
+            <div class="document-card">
+                <b>Document 1</b>
+                <p>Artificial intelligence (AI) is a technology that enables computers and machines to perform tasks that normally require human intelligence. AI systems can analyze information, recognize patterns, solve problems, and make decisions. Robotics focuses on designing and developing machines that can perform physical tasks in different environments.</p>
+            </div>
+
+            <div class="document-card">
+                <b>Document 2</b>
+                <p>AI and robotics work together to make robots more intelligent and capable. AI allows robots to learn from data, recognize objects, understand their surroundings, and make decisions. Sensors, cameras, and machine learning algorithms help robots respond to changes and perform tasks with greater accuracy.</p>
+            </div>
+
+            <div class="document-card">
+                <b>Document 3</b>
+                <p>AI-powered robots are used in many real-world applications. They can assist in healthcare, manufacturing, agriculture, education, transportation, and space exploration. AI and robotics can improve efficiency, reduce human effort, increase safety, and automate complex tasks. Together, these technologies are helping create smarter and more capable systems for the future.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Documents supplied for the selected topic: AI and Robotics
+        const documents = [
+            "Artificial intelligence (AI) is a technology that enables computers and machines to perform tasks that normally require human intelligence. AI systems can analyze information, recognize patterns, solve problems, and make decisions. Robotics focuses on designing and developing machines that can perform physical tasks in different environments.",
+            "AI and robotics work together to make robots more intelligent and capable. AI allows robots to learn from data, recognize objects, understand their surroundings, and make decisions. Sensors, cameras, and machine learning algorithms help robots respond to changes and perform tasks with greater accuracy.",
+            "AI-powered robots are used in many real-world applications. They can assist in healthcare, manufacturing, agriculture, education, transportation, and space exploration. AI and robotics can improve efficiency, reduce human effort, increase safety, and automate complex tasks. Together, these technologies are helping create smarter and more capable systems for the future."
+        ];
+
+        const stopwords = [
+            "a", "an", "the", "is", "are", "was", "were", "and", "or", "to", "of", "in", "on", "for",
+            "with", "from", "by", "at", "that", "this", "these", "those", "can", "be", "as", "their",
+            "they", "it", "its", "into", "more", "than", "through", "normally"
+        ];
+
+        // Basic preprocessing: lowercase, remove punctuation, remove stopwords.
+        function preprocess(text) {
+            text = text.toLowerCase();
+            text = text.replace(/[^a-zA-Z ]/g, ' ');
+            let words = text.split(/\s+/);
+            return words.filter(word => word && !stopwords.includes(word));
+        }
+
+        // Build vocabulary from all documents.
+        let vocabulary = [];
+        documents.forEach(doc => {
+            preprocess(doc).forEach(word => {
+                if (!vocabulary.includes(word)) vocabulary.push(word);
+            });
+        });
+
+        // Term Frequency.
+        function termFrequency(term, doc) {
+            const words = preprocess(doc);
+            return words.filter(word => word === term).length;
+        }
+
+        // Inverse Document Frequency using the same approach as the reference system.
+        function inverseDocumentFrequency(term) {
+            let docsContaining = 0;
+            documents.forEach(doc => {
+                if (preprocess(doc).includes(term)) docsContaining++;
+            });
+
+            return Math.log(documents.length / (1 + docsContaining));
+        }
+
+        // TF-IDF weight.
+        function tfidf(term, doc) {
+            return termFrequency(term, doc) * inverseDocumentFrequency(term);
+        }
+
+        // Cosine similarity between two vectors.
+        function cosineSimilarity(v1, v2) {
+            let dot = 0;
+            let mag1 = 0;
+            let mag2 = 0;
+
+            for (let i = 0; i < v1.length; i++) {
+                dot += v1[i] * v2[i];
+                mag1 += v1[i] * v1[i];
+                mag2 += v2[i] * v2[i];
+            }
+
+            mag1 = Math.sqrt(mag1);
+            mag2 = Math.sqrt(mag2);
+
+            if (mag1 === 0 || mag2 === 0) return 0;
+            return dot / (mag1 * mag2);
+        }
+
+        function setQuery(text) {
+            document.getElementById('query').value = text;
+            search();
+        }
+
+        // Search and rank documents.
+        function search() {
+            const query = document.getElementById('query').value.trim();
+
+            if (!query) {
+                document.getElementById('output').innerHTML =
+                    '<div class="empty">Please enter a search query.</div>';
+                return;
+            }
+
+            const queryWords = preprocess(query);
+            const queryVector = [];
+
+            vocabulary.forEach(term => {
+                const count = queryWords.filter(word => word === term).length;
+                queryVector.push(count);
+            });
+
+            const results = [];
+
+            documents.forEach((doc, index) => {
+                const docVector = vocabulary.map(term => tfidf(term, doc));
+                const score = cosineSimilarity(queryVector, docVector);
+
+                results.push({
+                    document: index + 1,
+                    score: score,
+                    text: doc
+                });
+            });
+
+            results.sort((a, b) => b.score - a.score);
+
+            let html = '<h2>Ranked Documents</h2>';
+            html += `<p><b>Query:</b> ${escapeHtml(query)}</p>`;
+
+            results.forEach((result, index) => {
+                html += `
+                    <div class="result">
+                        <h3>Rank ${index + 1}</h3>
+                        <p><b>Document:</b> D${result.document}</p>
+                        <p><b>Similarity Score:</b> <span class="score">${result.score.toFixed(4)}</span></p>
+                        <p>${result.text}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('output').innerHTML = html;
+        }
+
+        // Prevent query text from being interpreted as HTML.
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
